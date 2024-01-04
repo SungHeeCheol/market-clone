@@ -62,5 +62,19 @@ async def get_images(item_id):
 # 16진법(hex)으로 가져옴    
 # 16진법으로 가져온 image_bytes를 해석하고 byte 코드로 바꿔서 컨텐츠로 response 한다.
 
+@app.post('/signup')
+def signup(id:Annotated[str, Form()], 
+           password:Annotated[str, Form()],
+           name:Annotated[str, Form()],
+           email:Annotated[str, Form()]
+           ):
+    cur.execute(f"""
+                INSERT INTO users(id, name, email, password)
+                VALUES ('{id}', '{name}', '{email}', '{password}')
+                """)
+    con.commit()
+    print(id, password)
+    return '200'
+     
 
 app.mount("/", StaticFiles(directory='frontend', html=True), name='frontend')
