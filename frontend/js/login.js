@@ -1,17 +1,5 @@
 const form = document.querySelector("#login-form");
 
-const checkPassword = () => {
-  const formData = new FormData(form);
-  const password1 = formData.get("password");
-  const password2 = formData.get("password2");
-
-  if (password1 === password2) {
-    return true;
-  } else {
-    return false;
-  }
-};
-
 const handleSubmit = async (event) => {
   event.preventDefault();
 
@@ -27,14 +15,12 @@ const handleSubmit = async (event) => {
   });
   const data = await res.json();
 
-  console.log("액세스 토큰:", data);
-  // 오류번호(status)를 활용해서 코드 작성하기
-  if (res.status === 200) {
-    alert("로그인에 성공했습니다!");
-    window.location.pathname = "/";
-  } else if (res.status === 401) {
-    alert("존재하지 않는 ID 혹은 PASSWORD가 틀렸습니다.");
-  }
+  // '/login' post 요청의 response를 data로 받은 후 로컬 저장소에 토큰 세팅
+  const accessToken = data.access_token;
+  window.localStorage.setItem("token", accessToken);
+  alert("로그인 되었습니다.");
+
+  window.location.pathname = "/";
 };
 
 form.addEventListener("submit", handleSubmit);

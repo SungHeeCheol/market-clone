@@ -1,4 +1,4 @@
-from fastapi import FastAPI,UploadFile,Form,Response
+from fastapi import FastAPI,UploadFile,Form,Response,Depends
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from fastapi.staticfiles import StaticFiles
@@ -14,16 +14,19 @@ app = FastAPI()
 
 # LoginManager는 내가 만든 SECRET과 /login 패스에서 적당한 액세스 토큰을 만들어주는 라이브러리
 SECRET = "HCSeint"
-manager = LoginManager(SECRET, '/login')
+manager = LoginManager(SECRET, "/login")
 
 # 저장된 유저를 불러오는 함수
 @manager.user_loader()
-def query_user(id):
-     # 칼럼명 같이 가져오는 방법
+def query_user(data):
+    WHERE_STATEMENTS = f'id="{data}"'
+    if type(data) == dict:
+        WHERE_STATEMENTS = f'''id="{data['id']}"'''
+        
     con.row_factory = sqlite3.Row
     cur = con.cursor()
     user = cur.execute(f"""
-                       SELECT * from users WHERE id='{id}'
+                       SELECT * from users WHERE {WHERE_STATEMENTS}
                        """).fetchone()
     return user
 
@@ -40,9 +43,11 @@ def login(id:Annotated[str, Form()],
     
     # 액세스 토큰 만들기(JWT)
     access_token = manager.create_access_token(data={
-        'id':user['id'],
-        'name':user['name'],
-        'email':user['email']
+        'sub': {
+            'id':user['id'],
+            'name':user['name'],
+            'email':user['email']
+        }
     })
     
     return {'access_token':access_token}
@@ -73,20 +78,21 @@ async def create_item(image:UploadFile,
                 price:Annotated[int,Form()],
                 description:Annotated[str,Form()],
                 place:Annotated[str,Form()],
-                insertAt:Annotated[str,Form()]
+                insertAt:Annotated[str,Form()],
+                user=Depends(manager)
                 ):
     
     image_bytes = await image.read();
     cur.execute(f"""
                 INSERT INTO items(title,image,price,description,place,insertAt)
-                VALUES ('${title}','{image_bytes.hex()}',{price},'{description}','{place}',{insertAt})
+                VALUES ('{title}','{image_bytes.hex()}',{price},'{description}','{place}',{insertAt})
                 """)
     con.commit()
     return '200'
     
 # /items get요청
 @app.get("/items")
-async def get_items():
+async def get_items(user=Depends(manager)):
     # 칼럼명 같이 가져오는 방법
     con.row_factory = sqlite3.Row
     cur = con.cursor()
