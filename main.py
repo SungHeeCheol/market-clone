@@ -66,7 +66,6 @@ def signup(id:Annotated[str, Form()],
                 VALUES ('{id}', '{name}', '{email}', '{password}')
                 """)
     con.commit()
-    print(id, password)
     return '200'
      
 
@@ -104,14 +103,12 @@ async def get_items(user=Depends(manager)):
 @app.get('/images/{item_id}')
 async def get_images(item_id):
     cur = con.cursor()
-    
     image_bytes = cur.execute(f"""
                               SELECT image FROM items WHERE id={item_id}
                               """).fetchone()[0]
+    
     return Response(content=bytes.fromhex(image_bytes), media_type='image/*')
 # 16진법(hex)으로 가져옴    
 # 16진법으로 가져온 image_bytes를 해석하고 byte 코드로 바꿔서 컨텐츠로 response 한다.
-
-
 
 app.mount("/", StaticFiles(directory='frontend', html=True), name='frontend')
